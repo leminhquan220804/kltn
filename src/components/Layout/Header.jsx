@@ -1,0 +1,149 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMapPin, FiMenu, FiChevronRight } from 'react-icons/fi';
+import { MEGA_MENU_DATA } from '../../utils/constants';
+
+const Header = () => {
+  // State quản lý xem menu có đang mở không
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // State quản lý id của danh mục đang được rê chuột vào
+  const [activeMenuId, setActiveMenuId] = useState(MEGA_MENU_DATA[0].id);
+
+  // Tìm dữ liệu của danh mục đang active để hiển thị cột bên phải
+  const activeCategory = MEGA_MENU_DATA.find(cat => cat.id === activeMenuId);
+
+  return (
+    <header className="bg-white relative z-50">
+      
+      {/* TẦNG 1: TOP BAR */}
+      <div className="bg-[#157a2c] text-white text-sm hidden md:block">
+        <div className="container mx-auto px-4 py-1.5 flex justify-between items-center">
+          <ul className="flex gap-6">
+            <li className="flex items-center gap-1 hover:text-gray-200 cursor-pointer">
+              <FiMapPin /> Hệ Thống Cửa Hàng
+            </li>
+            <li className="hover:text-gray-200 cursor-pointer">Về Nhã Nam</li>
+            <li className="hover:text-gray-200 cursor-pointer">Tin Sách</li>
+            <li className="hover:text-gray-200 cursor-pointer">Event</li>
+          </ul>
+          <div className="flex items-center gap-3">
+            <span>Liên hệ:</span>
+            <span className="font-bold">0337706769</span>
+          </div>
+        </div>
+      </div>
+
+      {/* TẦNG 2: MAIN HEADER */}
+      <div className="container mx-auto px-4 py-5 flex items-center justify-between gap-8 border-b border-gray-100">
+        <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-[#157a2c]">
+          <div className="font-extrabold text-2xl tracking-tighter flex flex-col items-center leading-none">
+            
+            <span>Bookify</span>
+          </div>
+        </Link>
+
+        <div className="flex-grow max-w-3xl relative">
+          <input
+            type="text"
+            placeholder="Tên sách lên xu hướng/bestselling..."
+            className="w-full border border-gray-300 rounded-md py-2.5 px-4 pr-12 outline-none focus:border-[#157a2c] transition-all text-sm"
+          />
+          <button className="absolute right-0 top-0 h-full w-12 text-gray-500 hover:text-[#157a2c] flex items-center justify-center rounded-r-md transition-colors">
+            <FiSearch size={20} />
+          </button>
+        </div>
+
+        <div className="flex items-center gap-8 flex-shrink-0">
+          <Link to="/cart" className="flex flex-col items-center text-gray-600 hover:text-[#157a2c] relative transition-colors">
+            <FiShoppingCart size={22} strokeWidth={1.5} />
+            <span className="text-[11px] mt-1">Giỏ hàng</span>
+            <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+          </Link>
+          <Link to="/wishlist" className="flex flex-col items-center text-gray-600 hover:text-[#157a2c] relative transition-colors">
+            <FiHeart size={22} strokeWidth={1.5} />
+            <span className="text-[11px] mt-1">Yêu thích</span>
+            <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+          </Link>
+          <Link to="/login" className="flex flex-col items-center text-gray-600 hover:text-[#157a2c] transition-colors">
+            <FiUser size={22} strokeWidth={1.5} />
+            <span className="text-[11px] mt-1">Tài khoản</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* TẦNG 3: MENU ĐIỀU HƯỚNG & MEGA MENU */}
+      <div className="border-b border-gray-200 relative">
+        <div className="container mx-auto px-4 flex items-center gap-8">
+          
+          {/* KHU VỰC NÚT DANH MỤC CÓ SỰ KIỆN HOVER */}
+          <div 
+            className="relative"
+            onMouseEnter={() => setIsMenuOpen(true)}
+            onMouseLeave={() => setIsMenuOpen(false)}
+          >
+            {/* Nút Danh Mục */}
+            <button className={`flex items-center gap-2 font-bold py-3 px-6 border-x border-gray-100 transition-colors ${isMenuOpen ? 'text-[#157a2c] bg-gray-50' : 'text-[#157a2c] bg-white'}`}>
+              <FiMenu size={20} />
+              DANH MỤC
+            </button>
+
+            {/* BẢNG MEGA MENU DROPDOWN */}
+            {isMenuOpen && (
+              <div className="absolute top-full left-0 w-[850px] flex shadow-2xl border border-gray-100 rounded-b-lg overflow-hidden bg-white">
+                
+                {/* Cột trái: Danh mục cha */}
+                <div className="w-64 bg-white flex-shrink-0">
+                  <ul className="flex flex-col">
+                    {MEGA_MENU_DATA.map((category) => (
+                      <li 
+                        key={category.id}
+                        onMouseEnter={() => setActiveMenuId(category.id)}
+                        className={`px-4 py-3 cursor-pointer border-b border-gray-50 flex justify-between items-center transition-colors ${
+                          activeMenuId === category.id 
+                            ? 'bg-[#157a2c] text-white font-medium' 
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {category.title}
+                        <FiChevronRight size={16} className={activeMenuId === category.id ? 'text-white' : 'text-gray-400'} />
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Cột phải: Danh mục con (Nền xám nhạt như Nhã Nam) */}
+                <div className="flex-grow bg-[#f3f4f6] p-6">
+                  <div className="grid grid-cols-3 gap-3">
+                    {activeCategory?.subCategories.map((sub, index) => (
+                      <Link 
+                        key={index} 
+                        to={`/category/${sub}`}
+                        className="bg-white px-3 py-2 text-sm text-gray-700 rounded border border-gray-100 shadow-sm hover:text-[#157a2c] hover:border-[#157a2c] transition-colors truncate"
+                        title={sub}
+                      >
+                        {sub}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
+            )}
+          </div>
+
+          {/* Các link điều hướng tĩnh */}
+          <ul className="flex items-center gap-6 text-sm text-gray-800 font-medium">
+            <li><Link to="/sach-moi" className="hover:text-[#157a2c] transition">Sách mới</Link></li>
+            <li><Link to="/sach-ban-chay" className="hover:text-[#157a2c] transition">Sách bán chạy</Link></li>
+            <li><Link to="/sach-xu-huong" className="text-[#157a2c] transition">Sách xu hướng</Link></li>
+            <li><Link to="/an-pham-dac-biet" className="hover:text-[#157a2c] transition">Ấn phẩm đặc biệt</Link></li>
+            <li><Link to="/sach-dat-truoc" className="hover:text-[#157a2c] transition">Sách Đặt Trước</Link></li>
+          </ul>
+        </div>
+      </div>
+
+    </header>
+  );
+};
+
+export default Header;
