@@ -1,16 +1,37 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiSearch, FiShoppingCart, FiUser, FiHeart, FiMapPin, FiMenu, FiChevronRight } from 'react-icons/fi';
-import { MEGA_MENU_DATA } from '../../utils/constants';
+import { CATEGORIES_DB } from '../../utils/constants';
 
 const Header = () => {
-  // State quản lý xem menu có đang mở không
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // State quản lý id của danh mục đang được rê chuột vào
-  const [activeMenuId, setActiveMenuId] = useState(MEGA_MENU_DATA[0].id);
+  
+  // 1. Tách mảng Danh mục cha (những category có parent_id là null)
+  const parentCategories = CATEGORIES_DB.filter(cat => cat.parent_id === null && cat.is_active);
 
-  // Tìm dữ liệu của danh mục đang active để hiển thị cột bên phải
-  const activeCategory = MEGA_MENU_DATA.find(cat => cat.id === activeMenuId);
+  // 2. State lưu ID của danh mục cha đang được hover. Mặc định là ID của danh mục cha đầu tiên.
+  const [activeMenuId, setActiveMenuId] = useState(parentCategories[0]?.id || null);
+
+  // 3. Lọc ra các Danh mục con dựa vào parent_id khớp với activeMenuId
+  const subCategories = CATEGORIES_DB.filter(cat => cat.parent_id === activeMenuId && cat.is_active);
+
+  // Thanh tìm kiếm
+  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = () => {
+    if (searchTerm.trim() !== '') {
+      // Chuyển hướng sang trang search kèm từ khóa trên URL
+      navigate(`/search?keyword=${encodeURIComponent(searchTerm.trim())}`);
+      setIsMenuOpen(false); // Đóng menu nếu đang mở
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      handleSearch();
+    }
+  };
 
   return (
     <header className="bg-white relative z-50">
@@ -37,18 +58,23 @@ const Header = () => {
       <div className="container mx-auto px-4 py-5 flex items-center justify-between gap-8 border-b border-gray-100">
         <Link to="/" className="flex-shrink-0 flex items-center gap-2 text-[#157a2c]">
           <div className="font-extrabold text-2xl tracking-tighter flex flex-col items-center leading-none">
-            
             <span>Bookify</span>
           </div>
         </Link>
-
+    
         <div className="flex-grow max-w-3xl relative">
           <input
             type="text"
             placeholder="Tên sách lên xu hướng/bestselling..."
             className="w-full border border-gray-300 rounded-md py-2.5 px-4 pr-12 outline-none focus:border-[#157a2c] transition-all text-sm"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
-          <button className="absolute right-0 top-0 h-full w-12 text-gray-500 hover:text-[#157a2c] flex items-center justify-center rounded-r-md transition-colors">
+          <button 
+            onClick={handleSearch}
+            className="absolute right-0 top-0 h-full w-12 text-gray-500 hover:text-[#157a2c] flex items-center justify-center rounded-r-md transition-colors"
+          >
             <FiSearch size={20} />
           </button>
         </div>
@@ -64,10 +90,43 @@ const Header = () => {
             <span className="text-[11px] mt-1">Yêu thích</span>
             <span className="absolute -top-1.5 -right-2 bg-red-600 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
           </Link>
-          <Link to="/login" className="flex flex-col items-center text-gray-600 hover:text-[#157a2c] transition-colors">
-            <FiUser size={22} strokeWidth={1.5} />
-            <span className="text-[11px] mt-1">Tài khoản</span>
-          </Link>
+          
+          {/* === ĐÃ SỬA PHẦN TÀI KHOẢN TẠI ĐÂY === */}
+          {localStorage.getItem('activeUser') ? (
+            <div className="flex flex-col items-center text-[#157a2c] relative group">
+              {/* Bấm vào để sang trang Profile */}
+              <div 
+                className="flex flex-col items-center cursor-pointer"
+                onClick={() => navigate('/profile')}
+              >
+                <FiUser size={22} strokeWidth={1.5} />
+                <span className="text-[11px] mt-1 font-bold whitespace-nowrap">
+                  {JSON.parse(localStorage.getItem('activeUser')).name}
+                </span>
+              </div>
+              
+              {/* Nút Đăng xuất hiện ra khi hover */}
+              <div className="absolute top-full pt-2 right-0 hidden group-hover:block z-50">
+                <button 
+                  onClick={() => {
+                    localStorage.removeItem('activeUser');
+                    navigate('/'); 
+                    window.location.reload();
+                  }}
+                  className="bg-white border border-gray-200 shadow-lg rounded-md px-4 py-2 text-sm text-red-600 hover:bg-red-50 whitespace-nowrap"
+                >
+                  Đăng xuất
+                </button>
+              </div>
+            </div>
+          ) : (
+            <Link to="/login" className="flex flex-col items-center text-gray-600 hover:text-[#157a2c] transition-colors">
+              <FiUser size={22} strokeWidth={1.5} />
+              <span className="text-[11px] mt-1">Tài khoản</span>
+            </Link>
+          )}
+          {/* ===================================== */}
+
         </div>
       </div>
 
@@ -94,7 +153,7 @@ const Header = () => {
                 {/* Cột trái: Danh mục cha */}
                 <div className="w-64 bg-white flex-shrink-0">
                   <ul className="flex flex-col">
-                    {MEGA_MENU_DATA.map((category) => (
+                    {parentCategories.map((category) => (
                       <li 
                         key={category.id}
                         onMouseEnter={() => setActiveMenuId(category.id)}
@@ -104,27 +163,31 @@ const Header = () => {
                             : 'text-gray-700 hover:bg-gray-100'
                         }`}
                       >
-                        {category.title}
+                        {category.name}
                         <FiChevronRight size={16} className={activeMenuId === category.id ? 'text-white' : 'text-gray-400'} />
                       </li>
                     ))}
                   </ul>
                 </div>
 
-                {/* Cột phải: Danh mục con (Nền xám nhạt như Nhã Nam) */}
+                {/* Cột phải: Danh mục con */}
                 <div className="flex-grow bg-[#f3f4f6] p-6">
-                  <div className="grid grid-cols-3 gap-3">
-                    {activeCategory?.subCategories.map((sub, index) => (
-                      <Link 
-                        key={index} 
-                        to={`/category/${sub}`}
-                        className="bg-white px-3 py-2 text-sm text-gray-700 rounded border border-gray-100 shadow-sm hover:text-[#157a2c] hover:border-[#157a2c] transition-colors truncate"
-                        title={sub}
-                      >
-                        {sub}
-                      </Link>
-                    ))}
-                  </div>
+                  {subCategories.length > 0 ? (
+                    <div className="grid grid-cols-3 gap-3">
+                      {subCategories.map((sub) => (
+                        <Link 
+                          key={sub.id} 
+                          to={`/category/${sub.slug}`} 
+                          className="bg-white px-3 py-2 text-sm text-gray-700 rounded border border-gray-100 shadow-sm hover:text-[#157a2c] hover:border-[#157a2c] transition-colors truncate"
+                          title={sub.name}
+                        >
+                          {sub.name}
+                        </Link>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-gray-400 italic text-sm">Đang cập nhật danh mục...</div>
+                  )}
                 </div>
 
               </div>
